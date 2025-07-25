@@ -379,7 +379,8 @@ async def get_supported_platforms():
                 ],
                 url_patterns=[
                     "https://www.tiktok.com/@{username}/video/{video_id}",
-                    "https://vm.tiktok.com/{short_id}"
+                    "https://vm.tiktok.com/{short_id}",
+                    "https://vt.tiktok.com/{short_id}"
                 ]
             ),
             PlatformFeatures(
@@ -440,9 +441,10 @@ async def get_service_statistics():
             )
         ),
         error_breakdown={
-            "VIDEO_PRIVATE": int(failed_requests * 0.4),
-            "VIDEO_DELETED": int(failed_requests * 0.3),
-            "PLATFORM_ERROR": int(failed_requests * 0.2),
+            "VIDEO_PRIVATE": int(failed_requests * 0.3),
+            "VIDEO_DELETED": int(failed_requests * 0.25),
+            "NOT_VIDEO_CONTENT": int(failed_requests * 0.2),
+            "PLATFORM_ERROR": int(failed_requests * 0.15),
             "TIMEOUT": int(failed_requests * 0.1)
         },
         cache_stats=CacheStats(
@@ -460,7 +462,7 @@ def validate_video_url(url: str) -> bool:
     domain = parsed.netloc.lower()
     
     # Check for TikTok domains
-    tiktok_domains = ['tiktok.com', 'www.tiktok.com', 'vm.tiktok.com', 'm.tiktok.com']
+    tiktok_domains = ['tiktok.com', 'www.tiktok.com', 'vm.tiktok.com', 'vt.tiktok.com', 'm.tiktok.com']
     # Check for Instagram domains
     instagram_domains = ['instagram.com', 'www.instagram.com']
     
@@ -478,6 +480,36 @@ def get_platform_from_url(url: str) -> str:
         return 'instagram'
     else:
         return 'unknown'
+
+def is_video_content(video_info: dict) -> bool:
+    """Check if the extracted content is actually a video"""
+    if not video_info:
+        return False
+    
+    # Check if duration exists and is greater than 0
+    duration = video_info.get('duration')
+    if not duration or duration <= 0:
+        return False
+    
+    # Check for video-specific fields
+    has_video_format = video_info.get('format') or video_info.get('format_id')
+    has_video_url = video_info.get('url') and ('video' in str(video_info.get('url', '')).lower() or 'mp4' in str(video_info.get('url', '')).lower())
+    
+    # Check if it has video codecs or video-related metadata
+    vcodec = video_info.get('vcodec', 'none')
+    has_video_codec = vcodec and vcodec != 'none'
+    
+    # For TikTok/Instagram, check for typical video metadata
+    width = video_info.get('width', 0)
+    height = video_info.get('height', 0)
+    has_video_dimensions = width > 0 and height > 0
+    
+    # Check if it's explicitly marked as a video
+    media_type = video_info.get('_type', '')
+    is_video_type = media_type == 'video' or 'video' in media_type.lower()
+    
+    # Must have duration and at least one video indicator
+    return (has_video_format or has_video_url or has_video_codec or has_video_dimensions or is_video_type)
 
 async def analyze_thumbnail(thumbnail_url: str) -> ThumbnailAnalysis:
     """Analyze thumbnail using OpenAI Vision API with SDK"""
@@ -615,7 +647,7 @@ def extract_video_id_from_url(url: str) -> str:
     # Handle different TikTok URL formats
     patterns = [
         r'(?:https?://)?(?:www\.)?tiktok\.com/@[\w\.-]+/video/(\d+)',
-        r'(?:https?://)?(?:vm\.)?tiktok\.com/[\w\.-]+/(\d+)',
+        r'(?:https?://)?(?:vm\.|vt\.)?tiktok\.com/[\w\.-]+/(\d+)',
         r'(?:https?://)?(?:m\.)?tiktok\.com/v/(\d+)',
     ]
     
@@ -683,6 +715,11 @@ async def extract_video_metadata(url: str, include_thumbnail_analysis: bool = Tr
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     video_info = await asyncio.to_thread(ydl.extract_info, url, download=False)
                 
+                # Validate that the content is actually a video
+                if not is_video_content(video_info):
+                    content_type = "image" if video_info.get('width') and video_info.get('height') else "unknown content"
+                    raise ValueError(f"URL contains {content_type}, not a video. Please provide a video URL.")
+                
                 logger.info(f"Successfully extracted with ScraperAPI approach: {url}")
                 
             except Exception as e:
@@ -716,6 +753,11 @@ async def extract_video_metadata(url: str, include_thumbnail_analysis: bool = Tr
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 video_info = await asyncio.to_thread(ydl.extract_info, url, download=False)
+        
+        # Validate that the content is actually a video
+        if not is_video_content(video_info):
+            content_type = "image" if video_info.get('width') and video_info.get('height') else "unknown content"
+            raise ValueError(f"URL contains {content_type}, not a video. Please provide a video URL.")
         
         # Extract full description/caption (not truncated)
         full_description = video_info.get('description', '')
@@ -825,9 +867,16 @@ async def extract_single_video(
         
     except ValueError as e:
         failed_requests += 1
+        error_message = str(e)
+        error_code = "VIDEO_UNAVAILABLE"
+        
+        # Check if it's a non-video content error
+        if "not a video" in error_message.lower():
+            error_code = "NOT_VIDEO_CONTENT"
+        
         return create_error_response(
-            "VIDEO_UNAVAILABLE",
-            str(e),
+            error_code,
+            error_message,
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             request_id,
             ErrorDetails(url=url_str, platform=get_platform_from_url(url_str))
@@ -924,16 +973,23 @@ async def extract_batch_videos(
             
         except ValueError as e:
             failed_count += 1
+            error_message = str(e)
+            error_code = "VIDEO_UNAVAILABLE"
+            
+            # Check if it's a non-video content error
+            if "not a video" in error_message.lower():
+                error_code = "NOT_VIDEO_CONTENT"
+            
             failed.append(ProcessedVideo(
                 url=url_str,
                 status="failed",
                 error=ErrorInfo(
-                    code="VIDEO_UNAVAILABLE",
-                    message=str(e),
+                    code=error_code,
+                    message=error_message,
                     details=ErrorDetails(url=url_str, platform=get_platform_from_url(url_str))
                 )
             ))
-            logger.error(f"Video unavailable {url_str}: {str(e)}")
+            logger.error(f"Video unavailable {url_str}: {error_message}")
         except Exception as e:
             failed_count += 1
             failed.append(ProcessedVideo(
