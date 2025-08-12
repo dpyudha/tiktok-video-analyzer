@@ -1,10 +1,10 @@
 # Video Scraper Service
 
-A FastAPI service for extracting metadata from TikTok and Instagram videos using yt-dlp.
+A FastAPI service for extracting metadata from TikTok videos using yt-dlp.
 
 ## Features
 
-- Extract video metadata from TikTok and Instagram URLs
+- Extract video metadata from TikTok URLs
 - Validate URLs to ensure they're from supported platforms
 - Batch processing of multiple URLs (max 3)
 - RESTful API with proper error handling
@@ -20,8 +20,6 @@ pip install -r requirements.txt
 2. Set environment variables:
 ```bash
 export API_KEY="your-secret-api-key-here"
-export INSTAGRAM_USERNAME="your-instagram-username"
-export INSTAGRAM_PASSWORD="your-instagram-password"
 ```
 
 3. Run the service:
@@ -52,7 +50,6 @@ x-api-key: your-api-key-here
 {
   "urls": [
     "https://www.tiktok.com/@user/video/123",
-    "https://www.instagram.com/reel/abc123"
   ],
   "max_urls": 3
 }
@@ -106,8 +103,6 @@ This service is designed to be deployed on Railway, Render, or a dedicated VPS.
 ### Environment Variables
 
 - `API_KEY`: API key for authentication (required)
-- `INSTAGRAM_USERNAME`: Instagram username for authentication (optional, helps with rate limiting)
-- `INSTAGRAM_PASSWORD`: Instagram password for authentication (optional, helps with rate limiting)
 - `PORT`: Port to run the service on (default: 8000)
 - `HOST`: Host to bind to (default: 0.0.0.0)
 
