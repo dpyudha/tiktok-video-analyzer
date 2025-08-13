@@ -18,7 +18,7 @@ A high-performance FastAPI service for extracting metadata from TikTok videos us
 1. **Clone and Setup**:
 ```bash
 git clone <repository-url>
-cd video-scraper-service
+cd tiktok-video-scrapper
 pip install -r requirements.txt
 ```
 
@@ -339,10 +339,10 @@ Build and run with Docker:
 
 ```bash
 # Build the image
-docker build -t video-scraper-service .
+docker build -t tiktok-video-scrapper .
 
 # Run the container
-docker run -p 8000:8000 --env-file .env video-scraper-service
+docker run -p 8000:8000 --env-file .env tiktok-video-scrapper
 ```
 
 **Dockerfile:**
