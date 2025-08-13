@@ -26,6 +26,7 @@ async def extract_single_video(
     - **x-api-key**: API key required in header
     - **url**: Video URL (TikTok or Instagram)
     - **include_thumbnail_analysis**: Whether to include AI thumbnail analysis
+    - **include_transcript**: Whether to extract transcript from video subtitles
     - **cache_ttl**: Cache time-to-live in seconds
     """
     request_id = ResponseHelper.generate_request_id()
@@ -34,9 +35,9 @@ async def extract_single_video(
     try:
         url_str = str(request.url)
         
-        # Try to get from cache first
+        # Try to get from cache first (cache key includes transcript flag)
         cached_metadata = await cache_service.get_video_metadata(
-            url_str, request.include_thumbnail_analysis
+            url_str, request.include_thumbnail_analysis, request.include_transcript
         )
         
         if cached_metadata:
@@ -57,7 +58,7 @@ async def extract_single_video(
         
         # Extract from source
         metadata = await extractor.extract_metadata(
-            url_str, request.include_thumbnail_analysis, request_id
+            url_str, request.include_thumbnail_analysis, request.include_transcript, request_id
         )
         
         # Cache the result
@@ -101,6 +102,7 @@ async def extract_batch_videos(
     - **x-api-key**: API key required in header
     - **urls**: List of video URLs (TikTok or Instagram, max 3)
     - **include_thumbnail_analysis**: Whether to include AI thumbnail analysis
+    - **include_transcript**: Whether to extract transcript from video subtitles
     - **parallel_processing**: Whether to process URLs in parallel
     """
     request_id = ResponseHelper.generate_request_id()

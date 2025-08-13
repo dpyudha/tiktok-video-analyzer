@@ -1,6 +1,7 @@
 """Video-related data models."""
 from typing import Optional, List
 from pydantic import BaseModel
+from .transcript import TranscriptExtractionResult
 
 class ThumbnailAnalysis(BaseModel):
     """Comprehensive thumbnail analysis model."""
@@ -55,6 +56,13 @@ class VideoMetadata(BaseModel):
     upload_date: Optional[str] = None
     thumbnail_url: Optional[str] = None
     thumbnail_analysis: Optional[ThumbnailAnalysis] = None
+    
+    # Transcript-related fields
+    transcript: Optional[TranscriptExtractionResult] = None
+    has_transcript: Optional[bool] = None
+    transcript_language: Optional[str] = None
+    transcript_confidence: Optional[float] = None
+    
     extracted_at: Optional[str] = None
     processing_time_ms: Optional[int] = None
     cache_hit: Optional[bool] = False
