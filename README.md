@@ -24,7 +24,7 @@ A high-performance FastAPI service for extracting metadata from TikTok videos us
 
 1. **Clone and Setup**:
 ```bash
-git clone <repository-url>
+git clone https://github.com/dpyudha/tiktok-video-scrapper.git
 cd tiktok-video-scrapper
 pip install -r requirements.txt
 ```
