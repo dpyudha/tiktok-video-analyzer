@@ -1,6 +1,16 @@
-# Video Scraper Service
+# Tiktok Video Scraper
+
+[![CI](https://github.com/dpyudha/tiktok-video-scrapper/workflows/CI/badge.svg)](https://github.com/dpyudha/tiktok-video-scrapper/actions)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/tests-29%20passing-brightgreen.svg)](#testing)
+[![Coverage](https://img.shields.io/badge/coverage-54%25-yellow.svg)](#testing)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 
 A high-performance FastAPI service for extracting metadata from TikTok videos using yt-dlp with AI-powered thumbnail analysis.
+
+> **Note**: Replace `dpyudha` in the badge URLs with your actual GitHub username after publishing the repository.
 
 ## Features
 
