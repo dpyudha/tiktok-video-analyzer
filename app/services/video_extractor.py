@@ -26,6 +26,7 @@ class VideoExtractor:
         self, 
         url: str, 
         include_thumbnail_analysis: bool = True,
+        include_transcript: bool = False,
         request_id: Optional[str] = None
     ) -> VideoMetadata:
         """Extract metadata from a video URL."""
@@ -52,7 +53,7 @@ class VideoExtractor:
             # Process metadata
             processing_time = int((datetime.now() - start_time).total_seconds() * 1000)
             metadata = await self._create_metadata(
-                url, platform, video_info, processing_time, include_thumbnail_analysis
+                url, platform, video_info, processing_time, include_thumbnail_analysis, include_transcript
             )
             
             self.logger.info(f"Successfully extracted metadata for: {url}")
@@ -135,12 +136,13 @@ class VideoExtractor:
         platform: str,
         video_info: dict,
         processing_time: int,
-        include_thumbnail_analysis: bool
+        include_thumbnail_analysis: bool,
+        include_transcript: bool
     ) -> VideoMetadata:
         """Create VideoMetadata from extracted info."""
         
-        # Extract full description with captions
-        full_description = self._extract_full_description(video_info)
+        # Get base description (will be enhanced with transcript if needed)
+        base_description = video_info.get('description', '')
         
         # Get thumbnail analysis if requested
         thumbnail_analysis = None
@@ -152,11 +154,56 @@ class VideoExtractor:
             analyzer = ThumbnailAnalyzer()
             thumbnail_analysis = await analyzer.analyze_thumbnail(thumbnail_url, self.logger.request_id)
         
+        # Process transcript if requested
+        transcript_result = None
+        has_transcript = None
+        transcript_language = None
+        transcript_confidence = None
+        final_description = base_description
+        
+        if include_transcript:
+            try:
+                # Import here to avoid circular imports
+                from .transcript_service import TranscriptService
+                transcript_service = TranscriptService()
+                
+                # Extract transcript with service correlation ID
+                transcript_result = await transcript_service.extract_transcript(
+                    video_info, 
+                    request_id=self.logger.request_id
+                )
+                
+                if transcript_result.success and transcript_result.transcript:
+                    has_transcript = True
+                    transcript_language = transcript_result.transcript.language
+                    transcript_confidence = transcript_result.transcript.confidence_score
+                    
+                    # Enhance description with transcript for backward compatibility
+                    transcript_text = transcript_result.transcript.full_text
+                    if transcript_text and transcript_text.strip():
+                        final_description = f"{base_description}\n\nTranscript: {transcript_text}"
+                    
+                    self.logger.info(
+                        f"Transcript extracted: {transcript_language}, "
+                        f"confidence: {transcript_confidence:.2f}, "
+                        f"words: {transcript_result.transcript.word_count}"
+                    )
+                else:
+                    has_transcript = False
+                    self.logger.info(
+                        f"Transcript extraction failed: {transcript_result.error_message or 'Unknown error'}"
+                    )
+            except Exception as e:
+                # Don't let transcript errors break metadata extraction
+                has_transcript = False
+                transcript_result = None
+                self.logger.warning(f"Transcript processing failed with exception: {str(e)}")
+        
         return VideoMetadata(
             url=url,
             platform=platform,
             title=video_info.get('title', ''),
-            description=full_description,
+            description=final_description,
             duration=video_info.get('duration', None),
             view_count=video_info.get('view_count', None),
             like_count=video_info.get('like_count', None),
@@ -165,28 +212,14 @@ class VideoExtractor:
             upload_date=video_info.get('upload_date', ''),
             thumbnail_url=thumbnail_url,
             thumbnail_analysis=thumbnail_analysis,
+            
+            # Transcript fields
+            transcript=transcript_result,
+            has_transcript=has_transcript,
+            transcript_language=transcript_language,
+            transcript_confidence=transcript_confidence,
+            
             extracted_at=datetime.now(timezone.utc).isoformat(),
             processing_time_ms=processing_time,
             cache_hit=False  # Would be determined by cache layer
         )
-    
-    def _extract_full_description(self, video_info: dict) -> str:
-        """Extract full description including captions."""
-        description = video_info.get('description', '')
-        
-        # Try to get subtitles/captions if available
-        subtitles = video_info.get('subtitles', {})
-        automatic_captions = video_info.get('automatic_captions', {})
-        
-        # Combine description with any available captions
-        if subtitles or automatic_captions:
-            caption_text = ""
-            for lang_subs in list(subtitles.values()) + list(automatic_captions.values()):
-                if lang_subs and len(lang_subs) > 0:
-                    caption_text = lang_subs[0].get('data', '') if isinstance(lang_subs[0], dict) else ""
-                    break
-            
-            if caption_text:
-                description = f"{description}\n\nCaptions: {caption_text}"
-        
-        return description

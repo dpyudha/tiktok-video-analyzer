@@ -185,24 +185,25 @@ class CacheService:
         
         return InMemoryCacheBackend()
     
-    def _generate_cache_key(self, url: str, include_thumbnail_analysis: bool) -> str:
+    def _generate_cache_key(self, url: str, include_thumbnail_analysis: bool, include_transcript: bool = False) -> str:
         """Generate cache key for video metadata."""
         # Create a unique key based on URL and analysis options
-        key_data = f"{url}:thumbnail_analysis={include_thumbnail_analysis}"
+        key_data = f"{url}:thumbnail_analysis={include_thumbnail_analysis}:transcript={include_transcript}"
         key_hash = hashlib.md5(key_data.encode('utf-8')).hexdigest()
         return f"video_metadata:{key_hash}"
     
     async def get_video_metadata(
         self, 
         url: str, 
-        include_thumbnail_analysis: bool = True
+        include_thumbnail_analysis: bool = True,
+        include_transcript: bool = False
     ) -> Optional[VideoMetadata]:
         """Get cached video metadata."""
         if not settings.cache_enabled:
             return None
         
         try:
-            key = self._generate_cache_key(url, include_thumbnail_analysis)
+            key = self._generate_cache_key(url, include_thumbnail_analysis, include_transcript)
             data = await self.backend.get(key)
             
             if data:
@@ -228,7 +229,11 @@ class CacheService:
             return
         
         try:
-            key = self._generate_cache_key(metadata.url, bool(metadata.thumbnail_analysis))
+            key = self._generate_cache_key(
+                metadata.url, 
+                bool(metadata.thumbnail_analysis), 
+                bool(metadata.transcript)
+            )
             ttl = ttl_seconds or settings.cache_ttl_seconds
             
             # Convert metadata to dict and ensure it's JSON serializable
@@ -247,10 +252,11 @@ class CacheService:
             return
         
         try:
-            # Invalidate both with and without thumbnail analysis
+            # Invalidate all combinations of thumbnail analysis and transcript
             for include_analysis in [True, False]:
-                key = self._generate_cache_key(url, include_analysis)
-                await self.backend.delete(key)
+                for include_transcript in [True, False]:
+                    key = self._generate_cache_key(url, include_analysis, include_transcript)
+                    await self.backend.delete(key)
             
             self.logger.info(f"Invalidated cache for: {url}")
             

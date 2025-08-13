@@ -99,6 +99,7 @@ class BatchProcessor:
             metadata = await self.video_extractor.extract_metadata(
                 url, 
                 request.include_thumbnail_analysis,
+                request.include_transcript,
                 request_id
             )
             

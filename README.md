@@ -7,19 +7,18 @@
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 
-A high-performance FastAPI service for extracting metadata from TikTok videos using yt-dlp with AI-powered thumbnail analysis.
+A FastAPI service for extracting metadata from TikTok videos with AI thumbnail analysis and transcript generation.
 
 ## Features
 
-- **TikTok Video Extraction**: Extract comprehensive metadata from TikTok URLs
-- **AI Thumbnail Analysis**: OpenAI Vision API integration for intelligent thumbnail analysis
-- **Batch Processing**: Process multiple URLs simultaneously (max 3 per request)
-- **Anti-Block Protection**: ScraperAPI integration to avoid TikTok rate limiting and blocks
-- **Intelligent Caching**: Multi-backend caching (in-memory by default, Redis optional for production)
+- **TikTok Video Extraction**: Extract metadata from TikTok URLs
+- **AI Thumbnail Analysis**: OpenAI Vision API for thumbnail analysis
+- **Transcript Generation**: Extract subtitles with quality assessment
+- **Batch Processing**: Process up to 3 URLs simultaneously
+- **Anti-Block Protection**: ScraperAPI integration to avoid rate limiting
+- **Caching**: In-memory caching (Redis optional for production)
 - **Rate Limiting**: Built-in protection against abuse
-- **RESTful API**: Clean, documented API with proper error handling
-- **Health Monitoring**: Comprehensive health checks and service metrics
-- **Multilingual Support**: English and Indonesian analysis support
+- **Health Monitoring**: Service health checks and metrics
 
 ## Quick Start
 
@@ -46,6 +45,36 @@ The service will be available at `http://localhost:8000`
 4. **View API Documentation**:
 Visit `http://localhost:8000/docs` for interactive API documentation
 
+5. **Quick Test with Transcript**:
+```bash
+curl -X POST "http://localhost:8000/extract" \
+  -H "x-api-key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://www.tiktok.com/@user/video/1234567890",
+    "include_transcript": true,
+    "include_thumbnail_analysis": true
+  }'
+```
+
+## Transcript Generation
+
+Extracts subtitles from TikTok videos with timing and quality assessment.
+
+**Features:**
+- Multi-format support (VTT, SRT, JSON3, SRV, TTML)
+- Language prioritization (Indonesian → English)
+- Quality scoring and confidence assessment
+- Accurate timing for each segment
+- Text cleaning and normalization
+
+**Processing:**
+1. Detect available subtitle tracks
+2. Select best language and format
+3. Parse subtitles with timing
+4. Assess quality and generate confidence score
+5. Return structured segments with metadata
+
 ## Architecture
 
 ### 🏗️ Modular Design
@@ -68,6 +97,7 @@ app/
 ├── services/              # Business logic layer
 │   ├── video_extractor.py # Core video extraction
 │   ├── thumbnail_analyzer.py # AI thumbnail analysis
+│   ├── transcript_service.py # Intelligent transcript extraction
 │   ├── batch_processor.py # Concurrent processing
 │   └── cache_service.py   # Caching layer
 ├── config/                # Configuration and templates
@@ -96,15 +126,15 @@ app/
 
 1. **API Request** → Route handler validates input
 2. **Service Layer** → Checks cache, processes video
-3. **External APIs** → yt-dlp extraction + OpenAI analysis
-4. **Response** → Structured JSON with metadata
+3. **External APIs** → yt-dlp extraction + OpenAI analysis + transcript processing
+4. **Response** → Structured JSON with metadata, thumbnails, and transcripts
 
 ## API Endpoints
 
 ### Core Extraction Endpoints
 
 #### POST /extract
-Extract metadata from a single TikTok video URL with optional AI analysis.
+Extract metadata from a TikTok video URL with optional AI analysis and transcript generation.
 
 **Headers:**
 ```
@@ -117,9 +147,16 @@ Content-Type: application/json
 {
   "url": "https://www.tiktok.com/@user/video/1234567890",
   "include_thumbnail_analysis": true,
+  "include_transcript": true,
   "cache_ttl": 3600
 }
 ```
+
+**Parameters:**
+- `url` (string, required): TikTok video URL
+- `include_thumbnail_analysis` (boolean, optional): Enable AI thumbnail analysis (default: false)
+- `include_transcript` (boolean, optional): Enable transcript extraction (default: false)
+- `cache_ttl` (integer, optional): Cache time-to-live in seconds (default: 3600)
 
 **Success Response (200 OK):**
 ```json
@@ -138,6 +175,9 @@ Content-Type: application/json
     "upload_date": "2024-03-10",
     "uploader": "username",
     "thumbnail_url": "https://p16-sign.tiktokcdn.com/...",
+    "has_transcript": true,
+    "transcript_language": "id",
+    "transcript_confidence": 0.92,
     "thumbnail_analysis": {
       "visual_style": "talking_head",
       "setting": "modern_bedroom",
@@ -148,12 +188,84 @@ Content-Type: application/json
       "hook_elements": ["coffee_cup", "surprised_expression"],
       "confidence_score": 0.87
     },
+    "transcript": {
+      "language": "id",
+      "confidence_score": 0.92,
+      "total_segments": 8,
+      "total_duration": 23.45,
+      "segments": [
+        {
+          "start": 0.0,
+          "end": 3.2,
+          "text": "Pagi teman-teman! Ini adalah rutinitas 5 menit yang mengubah hidup saya"
+        },
+        {
+          "start": 3.2,
+          "end": 7.8,
+          "text": "Pertama, saya langsung minum segelas air putih untuk menghidrasi tubuh"
+        },
+        {
+          "start": 7.8,
+          "end": 12.5,
+          "text": "Kedua, stretching ringan selama 2 menit untuk bangunkan otot-otot"
+        },
+        {
+          "start": 12.5,
+          "end": 18.1,
+          "text": "Ketiga, menulis 3 hal yang saya syukuri hari ini di jurnal"
+        },
+        {
+          "start": 18.1,
+          "end": 23.0,
+          "text": "Dan terakhir, setting intention untuk hari ini. Coba deh, pasti berasa bedanya!"
+        }
+      ],
+      "metadata": {
+        "format": "vtt",
+        "source": "auto-generated",
+        "quality": "high"
+      }
+    },
     "extracted_at": "2024-03-15T10:30:00Z",
-    "processing_time_ms": 3420,
+    "processing_time_ms": 4850,
     "cache_hit": false
   },
   "metadata": {
     "request_id": "req_abc123",
+    "api_version": "1.0.0"
+  }
+}
+```
+
+**Simple Request (Backward Compatible):**
+```json
+{
+  "url": "https://www.tiktok.com/@user/video/1234567890"
+}
+```
+
+**Simple Response (200 OK):**
+```json
+{
+  "success": true,
+  "data": {
+    "url": "https://www.tiktok.com/@user/video/1234567890",
+    "platform": "tiktok",
+    "title": "Amazing video title",
+    "description": "Video description here",
+    "duration": 15,
+    "view_count": 100000,
+    "like_count": 5000,
+    "uploader": "username",
+    "has_transcript": false,
+    "transcript_language": null,
+    "transcript_confidence": null,
+    "extracted_at": "2024-03-15T10:30:00Z",
+    "processing_time_ms": 2100,
+    "cache_hit": false
+  },
+  "metadata": {
+    "request_id": "req_simple_123",
     "api_version": "1.0.0"
   }
 }
@@ -171,9 +283,16 @@ Extract metadata from multiple TikTok video URLs (max 3 per request).
     "https://www.tiktok.com/@user3/video/789"
   ],
   "include_thumbnail_analysis": true,
+  "include_transcript": true,
   "parallel_processing": true
 }
 ```
+
+**Parameters:**
+- `urls` (array, required): Array of TikTok video URLs (max 3)
+- `include_thumbnail_analysis` (boolean, optional): Enable AI thumbnail analysis (default: false)
+- `include_transcript` (boolean, optional): Enable transcript extraction (default: false)
+- `parallel_processing` (boolean, optional): Process URLs concurrently (default: true)
 
 **Success Response (200 OK):**
 ```json
@@ -184,8 +303,14 @@ Extract metadata from multiple TikTok video URLs (max 3 per request).
       {
         "url": "https://www.tiktok.com/@user1/video/123",
         "status": "success",
-        "data": { /* video metadata */ }
-      }
+        "data": { 
+          /* Complete video metadata with transcript if requested */
+          "has_transcript": true,
+          "transcript_language": "en",
+          "transcript_confidence": 0.89,
+          "transcript": { /* TranscriptExtractionResult object */ }
+        }
+      },
     ],
     "failed": [
       {
@@ -201,7 +326,8 @@ Extract metadata from multiple TikTok video URLs (max 3 per request).
       "total_requested": 3,
       "successful": 2,
       "failed": 1,
-      "processing_time_ms": 8750
+      "transcripts_found": 1,
+      "processing_time_ms": 12450
     }
   }
 }
@@ -263,7 +389,7 @@ All endpoints return consistent error responses:
 
 ### Common Error Codes
 
-- `INVALID_URL`: URL format is invalid or not from TikTok
+- `INVALID_URL`: URL format is invalid or not from supported platforms
 - `VIDEO_UNAVAILABLE`: Video is private, deleted, or restricted
 - `NOT_VIDEO_CONTENT`: URL contains non-video content
 - `VIDEO_TOO_LONG`: Video exceeds maximum duration limit
@@ -271,6 +397,8 @@ All endpoints return consistent error responses:
 - `RATE_LIMIT_EXCEEDED`: Too many requests
 - `API_KEY_INVALID`: Invalid or missing API key
 - `THUMBNAIL_ANALYSIS_FAILED`: OpenAI Vision API error
+- `TRANSCRIPT_EXTRACTION_FAILED`: Error processing video transcripts
+- `TRANSCRIPT_UNAVAILABLE`: No subtitles available for transcript extraction
 
 ## Testing
 
@@ -317,6 +445,13 @@ The service uses environment variables for configuration. Copy `.env.example` to
 - `CACHE_ENABLED`: Enable result caching (default: true)
 - `REDIS_URL`: Redis URL for distributed caching (optional - falls back to in-memory cache)
 - `SCRAPERAPI_KEY`: ScraperAPI key for anti-block protection (highly recommended for production)
+
+**Performance Notes:**
+- **Base Extraction**: 3-8 seconds per video without optional features
+- **With Thumbnail Analysis**: +2-4 seconds (requires OpenAI API)
+- **With Transcript Extraction**: +2-5 seconds (subtitle processing)
+- **Combined Features**: 8-15 seconds total processing time
+- **Batch Processing**: Concurrent processing reduces total time for multiple URLs
 
 See `.env.example` for complete configuration options with descriptions.
 
