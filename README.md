@@ -9,8 +9,6 @@
 
 A high-performance FastAPI service for extracting metadata from TikTok videos using yt-dlp with AI-powered thumbnail analysis.
 
-> **Note**: Replace `dpyudha` in the badge URLs with your actual GitHub username after publishing the repository.
-
 ## Features
 
 - **TikTok Video Extraction**: Extract comprehensive metadata from TikTok URLs
