@@ -5,7 +5,7 @@ Thank you for your interest in contributing! 🎉
 ## Quick Start
 
 1. **Fork** the repository
-2. **Clone** your fork: `git clone https://github.com/dpyudha/tiktok-video-scrapper.git`
+2. **Clone** your fork: `git clone https://github.com/dpyudha/tiktok-video-analyzer.git`
 3. **Create a branch**: `git checkout -b feature/your-feature-name`
 4. **Make changes** and test locally
 5. **Submit a Pull Request**
@@ -19,8 +19,8 @@ Thank you for your interest in contributing! 🎉
 ### Setup Steps
 ```bash
 # Clone your fork
-git clone https://github.com/dpyudha/tiktok-video-scrapper.git
-cd tiktok-video-scrapper
+git clone https://github.com/dpyudha/tiktok-video-analyzer.git
+cd tiktok-video-analyzer
 
 # Install dependencies
 pip install -r requirements.txt

@@ -68,5 +68,5 @@ jobs:
     
     - name: Test Docker build
       run: |
-        docker build -t tiktok-video-scrapper .
+        docker build -t tiktok-video-analyzer .
         echo "✅ Docker build successful"
