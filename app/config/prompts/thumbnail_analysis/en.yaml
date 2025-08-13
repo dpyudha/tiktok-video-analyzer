@@ -1,0 +1,119 @@
+# English Thumbnail Analysis Prompts  
+# Language: English (en)
+# Version: 1.0.0
+# Last Updated: 2024-03-15
+
+system_role: |
+  You are a Social Media Specialist, Content Strategist and Content Writer expert in visual content analysis for TikTok platform.
+
+main_prompt:
+  instruction: |
+    Analyze this video thumbnail deeply to help create effective storyboards.
+    Provide structured data in JSON format with all requested fields.
+    
+  analysis_sections:
+    basic_analysis:
+      title: "BASIC ANALYSIS"
+      fields:
+        - field: "visual_style"
+          options: ["talking_head", "flat_lay", "product_demo", "POV", "lifestyle", "tutorial", "review"]
+          description: "Main visual style displayed"
+        - field: "setting"
+          options: ["indoor", "outdoor", "studio", "bedroom", "kitchen", "office", "street", "store"]
+          description: "Location or video setting"
+        - field: "people_count"
+          type: "integer"
+          description: "Number of visible people (number)"
+        - field: "camera_angle"
+          options: ["close_up", "medium_shot", "wide_shot", "low_angle", "high_angle", "bird_eye"]
+          description: "Camera shooting angle"
+        - field: "text_overlay_style"
+          options: ["clean", "bold", "handwritten", "gradient", "outline", "shadow"]
+          description: "Text overlay style used"
+        - field: "color_scheme"
+          options: ["warm", "cool", "bright", "dark", "monochrome", "high_contrast", "pastel"]
+          description: "Dominant color scheme"
+        - field: "hook_elements"
+          type: "array"
+          description: "Attention-grabbing elements (array)"
+        - field: "confidence_score"
+          type: "float"
+          range: [0.0, 1.0]
+          description: "Analysis confidence level (0-1)"
+
+    composition_production:
+      title: "COMPOSITION & PRODUCTION ANALYSIS"
+      fields:
+        - field: "composition_type"
+          options: ["rule_of_thirds", "center_focused", "diagonal", "symmetrical", "asymmetrical"]
+          description: "Type of composition used"
+        - field: "focal_point"
+          type: "string"
+          description: "What first catches the eye (in English)"
+        - field: "lighting_quality"
+          options: ["natural", "artificial", "dramatic", "soft", "harsh", "backlit"]
+          description: "Lighting quality"
+        - field: "mood_emotion"
+          options: ["excited", "calm", "urgent", "playful", "professional", "mysterious", "confident"]
+          description: "Mood or emotion conveyed"
+        - field: "brand_elements"
+          type: "array"
+          description: "Visible logos, products, or branding (array)"
+        - field: "production_quality"
+          options: ["professional", "semi_pro", "amateur", "phone_quality"]
+          description: "Video production quality"
+        - field: "background_complexity"
+          options: ["minimal", "moderate", "busy", "chaotic"]
+          description: "Background complexity level"
+        - field: "props_objects"
+          type: "array"
+          description: "Visible props and objects (array)"
+
+    content_audience:
+      title: "CONTENT & AUDIENCE ANALYSIS"
+      fields:
+        - field: "story_stage"
+          options: ["opening_hook", "problem_setup", "solution_reveal", "result_show", "transition"]
+          description: "Story stage being displayed"
+        - field: "call_to_action_visible"
+          type: "boolean"
+          description: "Is there a visible CTA (true/false)"
+        - field: "product_prominence"
+          options: ["dominant", "subtle", "background", "none"]
+          description: "Product visibility level"
+        - field: "visual_interest_level"
+          options: ["high", "medium", "low"]
+          description: "Visual appeal level"
+        - field: "scroll_stopping_power"
+          options: ["strong", "moderate", "weak"]
+          description: "Scroll-stopping strength"
+        - field: "target_demographic"
+          options: ["teens", "young_adults", "families", "professionals", "parents"]
+          description: "Suitable target demographic"
+        - field: "content_category"
+          options: ["tutorial", "review", "demo", "lifestyle", "entertainment", "education", "comedy"]
+          description: "Content category"
+        - field: "pacing_indicator"
+          options: ["fast_paced", "moderate", "slow_build"]
+          description: "Pace/speed indicator"
+        - field: "transition_style"
+          options: ["smooth", "jump_cut", "fade", "dynamic", "static"]
+          description: "Visible transition style"
+
+response_format:
+  instruction: |
+    Return in valid JSON format with all fields above.
+    Use English for all string values.
+    Ensure all requested fields are present in the response.
+
+examples:
+  good_response: |
+    {
+      "visual_style": "talking_head",
+      "setting": "bedroom",
+      "people_count": 1,
+      "camera_angle": "medium_shot", 
+      "confidence_score": 0.85,
+      "hook_elements": ["coffee_cup", "surprised_expression"],
+      "mood_emotion": "excited"
+    }
