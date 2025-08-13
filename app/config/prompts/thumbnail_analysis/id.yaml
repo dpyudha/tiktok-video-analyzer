@@ -1,0 +1,119 @@
+# Indonesian Thumbnail Analysis Prompts
+# Language: Indonesian (id)
+# Version: 1.0.0
+# Last Updated: 2024-03-15
+
+system_role: |
+  Kamu adalah seorang Social Media Specialist, Content Strategist dan Content Writer yang expert dalam analisis konten visual untuk platform TikTok.
+
+main_prompt:
+  instruction: |
+    Analisis thumbnail video ini secara mendalam untuk membantu membuat storyboard yang efektif. 
+    Berikan data terstruktur dalam format JSON dengan semua field yang diminta.
+    
+  analysis_sections:
+    basic_analysis:
+      title: "ANALISIS DASAR"
+      fields:
+        - field: "visual_style"
+          options: ["berbicara_langsung", "flat_lay", "demo_produk", "POV", "lifestyle", "tutorial", "review"]
+          description: "Gaya visual utama yang ditampilkan"
+        - field: "setting" 
+          options: ["dalam_ruangan", "luar_ruangan", "studio", "kamar_tidur", "dapur", "kantor", "jalan", "toko"]
+          description: "Lokasi atau setting video"
+        - field: "people_count"
+          type: "integer"
+          description: "Jumlah orang yang terlihat (angka)"
+        - field: "camera_angle"
+          options: ["close_up", "medium_shot", "wide_shot", "sudut_rendah", "sudut_tinggi", "bird_eye"]
+          description: "Sudut pengambilan gambar"
+        - field: "text_overlay_style"
+          options: ["bersih", "tebal", "tulisan_tangan", "gradient", "outline", "shadow"]
+          description: "Gaya teks overlay yang digunakan"
+        - field: "color_scheme"
+          options: ["hangat", "dingin", "cerah", "gelap", "monokrom", "kontras_tinggi", "pastel"]
+          description: "Skema warna dominan"
+        - field: "hook_elements"
+          type: "array"
+          description: "Elemen-elemen yang menarik perhatian (array)"
+        - field: "confidence_score"
+          type: "float"
+          range: [0.0, 1.0]
+          description: "Tingkat keyakinan analisis (0-1)"
+
+    composition_production:
+      title: "ANALISIS KOMPOSISI & PRODUKSI"
+      fields:
+        - field: "composition_type"
+          options: ["rule_of_thirds", "center_focused", "diagonal", "symmetrical", "asymmetrical"]
+          description: "Jenis komposisi yang digunakan"
+        - field: "focal_point"
+          type: "string"
+          description: "Apa yang pertama menarik mata (dalam bahasa Indonesia)"
+        - field: "lighting_quality"
+          options: ["natural", "artificial", "dramatic", "soft", "harsh", "backlit"]
+          description: "Kualitas pencahayaan"
+        - field: "mood_emotion"
+          options: ["excited", "calm", "urgent", "playful", "professional", "mysterious", "confident"]
+          description: "Suasana atau emosi yang terpancar"
+        - field: "brand_elements"
+          type: "array"
+          description: "Logo, produk, atau branding yang terlihat (array)"
+        - field: "production_quality"
+          options: ["professional", "semi_pro", "amateur", "phone_quality"]
+          description: "Kualitas produksi video"
+        - field: "background_complexity"
+          options: ["minimal", "moderate", "busy", "chaotic"]
+          description: "Tingkat kerumitan latar belakang"
+        - field: "props_objects"
+          type: "array"
+          description: "Benda/properti yang terlihat (array)"
+
+    content_audience:
+      title: "ANALISIS KONTEN & AUDIENCE"
+      fields:
+        - field: "story_stage"
+          options: ["opening_hook", "problem_setup", "solution_reveal", "result_show", "transition"]
+          description: "Tahap cerita yang ditampilkan"
+        - field: "call_to_action_visible"
+          type: "boolean"
+          description: "Apakah ada CTA yang terlihat (true/false)"
+        - field: "product_prominence"
+          options: ["dominant", "subtle", "background", "none"]
+          description: "Tingkat keterlihatan produk"
+        - field: "visual_interest_level"
+          options: ["high", "medium", "low"]
+          description: "Level daya tarik visual"
+        - field: "scroll_stopping_power"
+          options: ["strong", "moderate", "weak"]
+          description: "Kekuatan menghentikan scroll"
+        - field: "target_demographic"
+          options: ["remaja", "dewasa_muda", "keluarga", "profesional", "ibu_rumah_tangga"]
+          description: "Target demografis yang sesuai"
+        - field: "content_category"
+          options: ["tutorial", "review", "demo", "lifestyle", "entertainment", "education", "comedy"]
+          description: "Kategori konten"
+        - field: "pacing_indicator"
+          options: ["fast_paced", "moderate", "slow_build"]
+          description: "Indikator pace/kecepatan"
+        - field: "transition_style"
+          options: ["smooth", "jump_cut", "fade", "dynamic", "static"]
+          description: "Gaya transisi yang terlihat"
+
+response_format:
+  instruction: |
+    Kembalikan dalam format JSON yang valid dengan semua field di atas. 
+    Gunakan Bahasa Indonesia untuk semua nilai string.
+    Pastikan semua field yang diminta ada dalam response.
+
+examples:
+  good_response: |
+    {
+      "visual_style": "berbicara_langsung",
+      "setting": "kamar_tidur", 
+      "people_count": 1,
+      "camera_angle": "medium_shot",
+      "confidence_score": 0.85,
+      "hook_elements": ["coffee_cup", "surprised_expression"],
+      "mood_emotion": "excited"
+    }

@@ -1,0 +1,208 @@
+# Response Schema Definition for Thumbnail Analysis
+# Version: 1.0.0
+# Last Updated: 2024-03-15
+
+response_schema:
+  type: "object"
+  required_fields:
+    # Basic Analysis Fields
+    - visual_style
+    - setting
+    - people_count
+    - camera_angle
+    - text_overlay_style
+    - color_scheme
+    - hook_elements
+    - confidence_score
+    
+    # Composition & Production Fields
+    - composition_type
+    - focal_point
+    - lighting_quality
+    - mood_emotion
+    - brand_elements
+    - production_quality
+    - background_complexity
+    - props_objects
+    
+    # Content & Audience Fields
+    - story_stage
+    - call_to_action_visible
+    - product_prominence
+    - visual_interest_level
+    - scroll_stopping_power
+    - target_demographic
+    - content_category
+    - pacing_indicator
+    - transition_style
+
+  field_definitions:
+    visual_style:
+      type: "string"
+      enum_id: ["berbicara_langsung", "flat_lay", "demo_produk", "POV", "lifestyle", "tutorial", "review"]
+      enum_en: ["talking_head", "flat_lay", "product_demo", "POV", "lifestyle", "tutorial", "review"]
+      nullable: false
+      
+    setting:
+      type: "string"
+      enum_id: ["dalam_ruangan", "luar_ruangan", "studio", "kamar_tidur", "dapur", "kantor", "jalan", "toko"]
+      enum_en: ["indoor", "outdoor", "studio", "bedroom", "kitchen", "office", "street", "store"]
+      nullable: false
+      
+    people_count:
+      type: "integer"
+      minimum: 0
+      maximum: 20
+      nullable: false
+      
+    camera_angle:
+      type: "string"
+      enum_id: ["close_up", "medium_shot", "wide_shot", "sudut_rendah", "sudut_tinggi", "bird_eye"]
+      enum_en: ["close_up", "medium_shot", "wide_shot", "low_angle", "high_angle", "bird_eye"]
+      nullable: false
+      
+    text_overlay_style:
+      type: "string"
+      enum_id: ["bersih", "tebal", "tulisan_tangan", "gradient", "outline", "shadow"]
+      enum_en: ["clean", "bold", "handwritten", "gradient", "outline", "shadow"]
+      nullable: true
+      
+    color_scheme:
+      type: "string"
+      enum_id: ["hangat", "dingin", "cerah", "gelap", "monokrom", "kontras_tinggi", "pastel"]
+      enum_en: ["warm", "cool", "bright", "dark", "monochrome", "high_contrast", "pastel"]
+      nullable: false
+      
+    hook_elements:
+      type: "array"
+      items:
+        type: "string"
+      nullable: true
+      default: []
+      
+    confidence_score:
+      type: "float"
+      minimum: 0.0
+      maximum: 1.0
+      nullable: false
+      
+    composition_type:
+      type: "string"
+      enum: ["rule_of_thirds", "center_focused", "diagonal", "symmetrical", "asymmetrical"]
+      nullable: false
+      
+    focal_point:
+      type: "string"
+      max_length: 200
+      nullable: false
+      
+    lighting_quality:
+      type: "string"
+      enum: ["natural", "artificial", "dramatic", "soft", "harsh", "backlit"]
+      nullable: false
+      
+    mood_emotion:
+      type: "string"
+      enum: ["excited", "calm", "urgent", "playful", "professional", "mysterious", "confident"]
+      nullable: false
+      
+    brand_elements:
+      type: "array"
+      items:
+        type: "string"
+      nullable: true
+      default: []
+      
+    production_quality:
+      type: "string"
+      enum: ["professional", "semi_pro", "amateur", "phone_quality"]
+      nullable: false
+      
+    background_complexity:
+      type: "string"
+      enum: ["minimal", "moderate", "busy", "chaotic"]
+      nullable: false
+      
+    props_objects:
+      type: "array"
+      items:
+        type: "string"
+      nullable: true
+      default: []
+      
+    story_stage:
+      type: "string"
+      enum: ["opening_hook", "problem_setup", "solution_reveal", "result_show", "transition"]
+      nullable: false
+      
+    call_to_action_visible:
+      type: "boolean"
+      nullable: false
+      
+    product_prominence:
+      type: "string"
+      enum: ["dominant", "subtle", "background", "none"]
+      nullable: false
+      
+    visual_interest_level:
+      type: "string"
+      enum: ["high", "medium", "low"]
+      nullable: false
+      
+    scroll_stopping_power:
+      type: "string"
+      enum: ["strong", "moderate", "weak"]
+      nullable: false
+      
+    target_demographic:
+      type: "string"
+      enum_id: ["remaja", "dewasa_muda", "keluarga", "profesional", "ibu_rumah_tangga"]
+      enum_en: ["teens", "young_adults", "families", "professionals", "parents"]
+      nullable: false
+      
+    content_category:
+      type: "string"
+      enum: ["tutorial", "review", "demo", "lifestyle", "entertainment", "education", "comedy"]
+      nullable: false
+      
+    pacing_indicator:
+      type: "string"
+      enum: ["fast_paced", "moderate", "slow_build"]
+      nullable: false
+      
+    transition_style:
+      type: "string"
+      enum: ["smooth", "jump_cut", "fade", "dynamic", "static"]
+      nullable: false
+
+validation_rules:
+  # Custom validation rules
+  cross_field_validations:
+    - name: "people_count_consistency"
+      rule: "If people_count > 0, then visual_style should be compatible with human presence"
+      applicable_styles: ["berbicara_langsung", "talking_head", "lifestyle", "tutorial", "review"]
+      
+    - name: "confidence_threshold"
+      rule: "confidence_score should be >= 0.3 for valid analysis"
+      minimum_confidence: 0.3
+      
+  data_quality_checks:
+    - name: "array_length_limits"
+      hook_elements_max: 10
+      brand_elements_max: 5
+      props_objects_max: 15
+      
+    - name: "string_length_limits"
+      focal_point_min: 5
+      focal_point_max: 200
+
+fallback_values:
+  # Default values when parsing fails
+  visual_style_id: "tidak_diketahui"
+  visual_style_en: "unknown"
+  setting_id: "tidak_diketahui" 
+  setting_en: "unknown"
+  confidence_score: 0.5
+  mood_emotion: "neutral"
+  content_category: "unknown"
+  people_count: 0
