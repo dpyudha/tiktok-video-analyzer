@@ -4,6 +4,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from app.services.video_service import VideoService
+from app.services.video_extractor import VideoExtractor  # For test compatibility
 from app.models.requests import ExtractBatchRequest
 from app.models.responses import BatchData, BatchSummary, ProcessedVideo
 from app.core.exceptions import ValidationError, VideoScraperBaseException
@@ -13,8 +14,15 @@ from app.core.config import settings
 class BatchProcessor:
     """Simple service for batch video processing."""
     
-    def __init__(self):
-        self.video_service = VideoService()
+    def __init__(self, video_service=None):
+        self._video_service = video_service
+    
+    @property
+    def video_service(self):
+        """Lazy-load video service to allow for mocking."""
+        if not hasattr(self, '_video_service_instance'):
+            self._video_service_instance = self._video_service or VideoService()
+        return self._video_service_instance
     
     async def process_batch(
         self, 

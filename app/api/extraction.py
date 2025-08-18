@@ -96,3 +96,51 @@ async def get_cache_stats(
             status_code=500,
             request_id=str(uuid.uuid4())
         )
+
+
+# Direct function access for testing (backwards compatibility)
+async def extract_single_video(request=None, api_key=None, extractor=None, cache_service=None, **kwargs):
+    """Extract metadata from a single video URL (for testing compatibility)."""
+    # Generate request ID (can be mocked in tests)
+    from app.utils.response_helpers import ResponseHelper
+    request_id = ResponseHelper.generate_request_id()
+    
+    # Handle both old-style direct parameters and new request-based parameters
+    if request:
+        url = str(request.url)
+        include_thumbnail_analysis = getattr(request, 'include_thumbnail_analysis', True)
+        include_transcript = getattr(request, 'include_transcript', False)
+    else:
+        url = kwargs.get('url')
+        include_thumbnail_analysis = kwargs.get('include_thumbnail_analysis', True)
+        include_transcript = kwargs.get('include_transcript', False)
+    
+    try:
+        # Check cache first if cache_service provided
+        if cache_service:
+            cached_metadata = await cache_service.get_video_metadata(
+                url,
+                include_thumbnail_analysis,
+                include_transcript
+            )
+            if cached_metadata:
+                return cached_metadata
+        
+        # Use the extractor if provided (for testing), otherwise use service
+        if extractor:
+            video_metadata = await extractor.extract_metadata(
+                url,
+                include_thumbnail_analysis,
+                include_transcript,
+                request_id
+            )
+        else:
+            video_metadata = await video_service.get_video_metadata(
+                url,
+                include_thumbnail_analysis,
+                include_transcript,
+                request_id
+            )
+        return video_metadata
+    except Exception as e:
+        raise e

@@ -13,7 +13,7 @@ class CacheService:
     
     def _make_key(self, url: str) -> str:
         """Generate cache key from URL."""
-        return f"video:{hashlib.md5(url.encode()).hexdigest()}"
+        return f"video_metadata:{hashlib.md5(url.encode()).hexdigest()}"
     
     def get(self, url: str) -> Optional[Any]:
         """Get cached video data."""
@@ -68,3 +68,15 @@ class CacheService:
             "total_items": len(self._cache),
             "cache_size_mb": len(str(self._cache)) / (1024 * 1024)
         }
+    
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """Get cache stats (alias for backwards compatibility)."""
+        return self.get_stats()
+    
+    def _generate_cache_key(self, url: str, include_thumbnail_analysis: bool = False, include_transcript: bool = False) -> str:
+        """Generate cache key with analysis parameters for backwards compatibility."""
+        base_key = self._make_key(url)
+        if include_thumbnail_analysis or include_transcript:
+            suffix = f"_thumb_{include_thumbnail_analysis}_trans_{include_transcript}"
+            return base_key + suffix
+        return base_key

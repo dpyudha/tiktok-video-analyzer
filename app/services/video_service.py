@@ -11,9 +11,9 @@ from app.core.exceptions import UnsupportedPlatformError
 class VideoService:
     """Service for video operations."""
     
-    def __init__(self):
-        self.cache = CacheService()
-        self.extractor = VideoExtractor()
+    def __init__(self, cache=None, extractor=None):
+        self.cache = cache or CacheService()
+        self.extractor = extractor if extractor is not None else VideoExtractor()
     
     async def get_video_metadata(
         self, 

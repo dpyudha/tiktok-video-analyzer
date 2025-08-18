@@ -33,8 +33,8 @@ async def health_check(cache_service: CacheService = Depends(get_cache_service_d
     uptime = int((datetime.now() - service_start_time).total_seconds())
     
     # Get cache statistics
-    cache_stats = await cache_service.get_cache_stats()
-    cache_hit_rate = cache_stats.get('hit_rate', 0.0)
+    cache_stats = cache_service.get_cache_stats()
+    cache_hit_rate = 0.0  # Simplified cache doesn't track hit rate
     
     # Check dependency status
     dependencies = DependencyStatus(
@@ -104,7 +104,7 @@ async def get_service_statistics(cache_service: CacheService = Depends(get_cache
     tiktok_count = total_extractions
     
     # Get cache stats
-    cache_stats = await cache_service.get_cache_stats()
+    cache_stats = cache_service.get_cache_stats()
     
     stats_data = {
         "service_stats": {
