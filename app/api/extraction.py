@@ -2,9 +2,11 @@
 from fastapi import APIRouter, Security
 import uuid
 
-from app.models.requests import ExtractRequest, ExtractBatchRequest
+from app.models.requests import ExtractRequest, ExtractBatchRequest, ExtractTranscriptRequest
 from app.services.video_service import VideoService
 from app.services.batch_processor import BatchProcessor
+from app.services.transcript_service import TranscriptService
+from app.services.video_extractor import VideoExtractor
 from app.core.dependencies import verify_api_key
 from app.core.exceptions import VideoScraperBaseException
 from app.utils.response_helpers import ResponseHelper
@@ -15,6 +17,8 @@ router = APIRouter()
 # Service instances
 video_service = VideoService()
 batch_processor = BatchProcessor()
+transcript_service = TranscriptService()
+video_extractor = VideoExtractor()
 
 
 @router.post("/extract")
@@ -73,6 +77,66 @@ async def extract_batch_video_metadata(
         return ResponseHelper.create_error_response(
             error_code="BATCH_PROCESSING_FAILED",
             message=str(e),
+            status_code=500,
+            request_id=request_id
+        )
+
+
+@router.post("/extract-transcript")
+async def extract_transcript(
+    request: ExtractTranscriptRequest,
+    api_key: str = Security(verify_api_key)
+):
+    """Extract transcript from a TikTok video URL.
+    
+    This endpoint specifically focuses on extracting transcript/captions from videos.
+    It uses yt-dlp to extract available subtitles and captions, with preference for:
+    1. Manual subtitles in preferred language
+    2. Auto-generated captions in preferred language
+    3. Any available subtitles/captions
+    
+    Returns clean, structured transcript data with timing information when available.
+    """
+    request_id = str(uuid.uuid4())
+    
+    try:
+        # First, extract basic video info using yt-dlp
+        # We need this to get subtitle/caption data
+        video_info = await video_extractor._extract_with_fallback(str(request.url))
+        
+        # Extract transcript using the transcript service
+        transcript_result = await transcript_service.extract_transcript(
+            video_info=video_info,
+            preferred_language=request.preferred_language,
+            request_id=request_id
+        )
+        
+        # Create response data structure
+        response_data = {
+            "url": str(request.url),
+            "success": transcript_result.success,
+            "transcript": None,
+            "available_subtitles": transcript_result.available_subtitles.model_dump() if transcript_result.available_subtitles else None,
+            "error_message": transcript_result.error_message,
+            "fallback_used": transcript_result.fallback_used,
+            "quality_assessment": transcript_result.quality_assessment.model_dump() if transcript_result.quality_assessment else None
+        }
+        
+        # Include transcript data if extraction was successful
+        if transcript_result.success and transcript_result.transcript:
+            response_data["transcript"] = transcript_result.transcript.model_dump()
+        
+        return ResponseHelper.create_success_response(
+            data=response_data,
+            request_id=request_id
+        )
+        
+    except VideoScraperBaseException as e:
+        return ResponseHelper.create_error_from_exception(e, request_id)
+    except Exception as e:
+        return ResponseHelper.create_error_response(
+            error_code="TRANSCRIPT_EXTRACTION_FAILED",
+            message=f"Failed to extract transcript: {str(e)}",
             status_code=500,
             request_id=request_id
         )
