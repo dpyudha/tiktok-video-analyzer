@@ -5,8 +5,8 @@ from fastapi.security import APIKeyHeader
 
 from .config import settings
 from .exceptions import APIKeyInvalidError, VideoScraperBaseException
-from ..services import VideoExtractor, ThumbnailAnalyzer, BatchProcessor, CacheService
-from ..utils.logging import CorrelatedLogger
+from app.services import VideoExtractor, ThumbnailAnalyzer, BatchProcessor, CacheService
+from app.utils.logging import CorrelatedLogger
 
 # Security dependency
 api_key_header = APIKeyHeader(name="x-api-key")

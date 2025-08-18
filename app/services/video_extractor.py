@@ -7,14 +7,14 @@ from urllib.parse import quote
 
 import yt_dlp
 
-from ..core.config import settings, YTDLPConfig
-from ..core.exceptions import (
+from app.core.config import settings, YTDLPConfig
+from app.core.exceptions import (
     VideoUnavailableError, ExtractionFailedError, NotVideoContentError,
     ServiceUnavailableError, TimeoutError
 )
-from ..models.video import VideoMetadata
-from ..utils.validators import URLValidator, ContentValidator
-from ..utils.logging import CorrelatedLogger
+from app.models.video import VideoMetadata
+from app.utils.validators import URLValidator, ContentValidator
+from app.utils.logging import CorrelatedLogger
 
 class VideoExtractor:
     """Service for extracting video metadata using yt-dlp."""

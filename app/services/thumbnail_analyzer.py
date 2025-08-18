@@ -6,12 +6,12 @@ from typing import Optional, Dict, Any
 
 from openai import OpenAI
 
-from ..core.config import settings
-from ..core.exceptions import ThumbnailAnalysisError, ConfigurationError
-from ..models.video import ThumbnailAnalysis
-from ..utils.logging import CorrelatedLogger
-from ..config.templates import get_template_engine
-from ..config.schemas import (
+from app.core.config import settings
+from app.core.exceptions import ThumbnailAnalysisError, ConfigurationError
+from app.models.video import ThumbnailAnalysis
+from app.utils.logging import CorrelatedLogger
+from app.config.templates import get_template_engine
+from app.config.schemas import (
     get_response_validator, 
     AnalysisLanguage, 
     AnalysisValidationError,

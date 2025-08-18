@@ -9,8 +9,8 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, Template
 from dataclasses import dataclass
 
-from ...core.exceptions import ConfigurationError
-from ...utils.logging import CorrelatedLogger
+from app.core.exceptions import ConfigurationError
+from app.utils.logging import CorrelatedLogger
 
 
 @dataclass

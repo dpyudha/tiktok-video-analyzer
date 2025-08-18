@@ -7,13 +7,13 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
-from ..core.config import settings
-from ..core.exceptions import ExtractionFailedError, ServiceUnavailableError
-from ..models.transcript import (
+from app.core.config import settings
+from app.core.exceptions import ExtractionFailedError, ServiceUnavailableError
+from app.models.transcript import (
     TranscriptSegment, VideoTranscript, TranscriptQuality,
     SubtitleFormat, AvailableSubtitles, TranscriptExtractionResult
 )
-from ..utils.logging import CorrelatedLogger
+from app.utils.logging import CorrelatedLogger
 
 
 class TranscriptService:

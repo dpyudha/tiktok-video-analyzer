@@ -3,14 +3,14 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from ..core.config import settings, PlatformConfig
-from ..core.dependencies import get_cache_service_dep
-from ..models.responses import (
+from app.core.config import settings, PlatformConfig
+from app.core.dependencies import get_cache_service_dep
+from app.models.responses import (
     HealthData, DependencyStatus, HealthMetrics,
     SupportedPlatformsData, PlatformFeatures, PlatformLimitations
 )
-from ..services import CacheService
-from ..utils.response_helpers import ResponseHelper
+from app.services import CacheService
+from app.utils.response_helpers import ResponseHelper
 
 router = APIRouter(tags=["health"])
 

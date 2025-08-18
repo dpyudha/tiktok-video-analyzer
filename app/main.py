@@ -4,11 +4,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .core.config import settings
-from .core.exceptions import VideoScraperBaseException
-from .api import extraction_router, health_router
-from .utils.logging import LoggerSetup
-from .utils.response_helpers import ResponseHelper
+from app.core.config import settings
+from app.core.exceptions import VideoScraperBaseException
+from app.api import extraction_router, health_router
+from app.utils.logging import LoggerSetup
+from app.utils.response_helpers import ResponseHelper
 
 # Setup logging
 LoggerSetup.setup_logging()
