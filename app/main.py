@@ -69,7 +69,7 @@ def custom_openapi():
     # Apply security to protected endpoints
     for path in openapi_schema["paths"]:
         for method in openapi_schema["paths"][path]:
-            if method in ["post"] and path in ["/extract", "/extract/batch"]:
+            if method in ["post"] and path in ["/extract", "/extract/batch", "/extract-transcript"]:
                 openapi_schema["paths"][path][method]["security"] = [{"ApiKeyAuth": []}]
     
     app.openapi_schema = openapi_schema

@@ -15,3 +15,9 @@ class ExtractBatchRequest(BaseModel):
     include_thumbnail_analysis: Optional[bool] = True
     include_transcript: Optional[bool] = False
     parallel_processing: Optional[bool] = True
+
+class ExtractTranscriptRequest(BaseModel):
+    """Request model for transcript-only extraction."""
+    url: HttpUrl
+    preferred_language: Optional[str] = None
+    cache_ttl: Optional[int] = 3600

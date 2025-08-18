@@ -19,8 +19,8 @@ from app.utils.logging import CorrelatedLogger
 class TranscriptService:
     """Service for extracting and processing video transcripts from yt-dlp subtitle data."""
     
-    # Language preference order (Indonesian, English, then others)
-    PREFERRED_LANGUAGES = ['id', 'en', 'en-US', 'en-GB']
+    # Default language fallback order when no user preference specified
+    DEFAULT_LANGUAGE_FALLBACKS = ['id', 'en']
     
     # Supported subtitle formats with processing capabilities
     SUPPORTED_FORMATS = {
@@ -47,7 +47,9 @@ class TranscriptService:
         
         Args:
             video_info: Complete yt-dlp extraction result
-            preferred_language: Preferred language code (defaults to 'id')
+            preferred_language: User's preferred language code (e.g., 'id', 'en'). 
+                               When specified, this language takes absolute priority.
+                               If not specified or unavailable, falls back to default order.
             request_id: Request correlation ID for logging
             
         Returns:
@@ -149,25 +151,37 @@ class TranscriptService:
                             file_size=fmt.get('filesize')
                         ))
         
-        # Determine preferred language based on availability
+        # Get all available languages
         all_languages = list(set([s.language for s in manual_subtitles + automatic_captions]))
-        preferred_language = self._determine_preferred_language(all_languages)
         
         return AvailableSubtitles(
             manual_subtitles=manual_subtitles,
             automatic_captions=automatic_captions,
-            preferred_language=preferred_language,
+            preferred_language=all_languages[0] if all_languages else None,
             total_languages=len(all_languages)
         )
     
-    def _determine_preferred_language(self, available_languages: List[str]) -> Optional[str]:
-        """Determine the best available language based on preferences."""
-        for preferred in self.PREFERRED_LANGUAGES:
-            if preferred in available_languages:
-                return preferred
+    def _get_language_fallback_order(self, 
+                                     user_preferred: Optional[str], 
+                                     available_languages: List[str]) -> List[str]:
+        """Get language preference order respecting user choice first."""
+        preference_order = []
         
-        # Return first available language if no preferred match
-        return available_languages[0] if available_languages else None
+        # 1. User's explicit preference takes absolute priority
+        if user_preferred and user_preferred in available_languages:
+            preference_order.append(user_preferred)
+        
+        # 2. Add default fallbacks only if user didn't specify or it's not available
+        for fallback_lang in self.DEFAULT_LANGUAGE_FALLBACKS:
+            if fallback_lang in available_languages and fallback_lang not in preference_order:
+                preference_order.append(fallback_lang)
+        
+        # 3. Add any remaining available languages
+        for lang in available_languages:
+            if lang not in preference_order:
+                preference_order.append(lang)
+        
+        return preference_order
     
     async def _extract_best_transcript(
         self,
@@ -175,47 +189,42 @@ class TranscriptService:
         available_subtitles: AvailableSubtitles,
         target_language: str
     ) -> Optional[VideoTranscript]:
-        """Extract the best available transcript with language and format preferences."""
+        """Extract the best available transcript respecting user language preference."""
         
-        # Priority 1: Manual subtitles in target language
-        for subtitle in available_subtitles.manual_subtitles:
-            if subtitle.language == target_language and subtitle.format_id in self.SUPPORTED_FORMATS:
-                transcript = await self._extract_from_subtitle_format(
-                    video_info, subtitle.language, subtitle.format_id, is_automatic=False
-                )
-                if transcript:
-                    return transcript
+        # Get all available languages
+        all_languages = list(set(
+            [s.language for s in available_subtitles.manual_subtitles + available_subtitles.automatic_captions]
+        ))
         
-        # Priority 2: Manual subtitles in preferred languages
-        for lang in self.PREFERRED_LANGUAGES:
+        # Get language preference order that respects user choice
+        language_order = self._get_language_fallback_order(target_language, all_languages)
+        
+        # Try each language in preference order, prioritizing manual over automatic
+        for preferred_lang in language_order:
+            # Priority 1: Manual subtitles in this language
             for subtitle in available_subtitles.manual_subtitles:
-                if subtitle.language == lang and subtitle.format_id in self.SUPPORTED_FORMATS:
+                if subtitle.language == preferred_lang and subtitle.format_id in self.SUPPORTED_FORMATS:
                     transcript = await self._extract_from_subtitle_format(
                         video_info, subtitle.language, subtitle.format_id, is_automatic=False
                     )
                     if transcript:
+                        self.logger.info(f"Using manual subtitles in '{preferred_lang}' language")
                         return transcript
-        
-        # Priority 3: Auto captions in target language
-        for subtitle in available_subtitles.automatic_captions:
-            if subtitle.language == target_language and subtitle.format_id in self.SUPPORTED_FORMATS:
-                transcript = await self._extract_from_subtitle_format(
-                    video_info, subtitle.language, subtitle.format_id, is_automatic=True
-                )
-                if transcript:
-                    return transcript
-        
-        # Priority 4: Auto captions in preferred languages
-        for lang in self.PREFERRED_LANGUAGES:
+            
+            # Priority 2: Auto captions in this language
             for subtitle in available_subtitles.automatic_captions:
-                if subtitle.language == lang and subtitle.format_id in self.SUPPORTED_FORMATS:
+                if subtitle.language == preferred_lang and subtitle.format_id in self.SUPPORTED_FORMATS:
                     transcript = await self._extract_from_subtitle_format(
                         video_info, subtitle.language, subtitle.format_id, is_automatic=True
                     )
                     if transcript:
+                        self.logger.info(f"Using automatic captions in '{preferred_lang}' language")
                         return transcript
         
-        # Priority 5: Any available manual subtitles
+        # Last resort: Try any available subtitles with best format quality
+        self.logger.warning("No subtitles found in preferred languages, trying any available format")
+        
+        # Try manual subtitles first
         sorted_manual = sorted(
             available_subtitles.manual_subtitles,
             key=lambda x: self.SUPPORTED_FORMATS.get(x.format_id, {}).get('priority', 999)
@@ -225,9 +234,10 @@ class TranscriptService:
                 video_info, subtitle.language, subtitle.format_id, is_automatic=False
             )
             if transcript:
+                self.logger.info(f"Fallback: Using manual subtitles in '{subtitle.language}' language")
                 return transcript
         
-        # Priority 6: Any available auto captions
+        # Finally try auto captions
         sorted_auto = sorted(
             available_subtitles.automatic_captions,
             key=lambda x: self.SUPPORTED_FORMATS.get(x.format_id, {}).get('priority', 999)
@@ -237,6 +247,7 @@ class TranscriptService:
                 video_info, subtitle.language, subtitle.format_id, is_automatic=True
             )
             if transcript:
+                self.logger.info(f"Fallback: Using automatic captions in '{subtitle.language}' language")
                 return transcript
         
         return None
