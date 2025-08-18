@@ -145,13 +145,6 @@ that completely changed my morning routine
 4. **Language Support**: TikTok doesn't support the spoken language
 5. **Copyright Issues**: Audio content is copyrighted
 
-## API Endpoints
-
-```
-POST /extract - Main endpoint for all extraction types
-GET /health - Check if service is running
-```
-
 ## Tech Stack
 
 - **FastAPI** - Web framework
