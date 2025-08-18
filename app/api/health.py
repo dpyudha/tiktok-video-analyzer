@@ -3,14 +3,14 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from ..core.config import settings, PlatformConfig
-from ..core.dependencies import get_cache_service_dep
-from ..models.responses import (
+from app.core.config import settings, PlatformConfig
+from app.core.dependencies import get_cache_service_dep
+from app.models.responses import (
     HealthData, DependencyStatus, HealthMetrics,
     SupportedPlatformsData, PlatformFeatures, PlatformLimitations
 )
-from ..services import CacheService
-from ..utils.response_helpers import ResponseHelper
+from app.services import CacheService
+from app.utils.response_helpers import ResponseHelper
 
 router = APIRouter(tags=["health"])
 
@@ -33,8 +33,8 @@ async def health_check(cache_service: CacheService = Depends(get_cache_service_d
     uptime = int((datetime.now() - service_start_time).total_seconds())
     
     # Get cache statistics
-    cache_stats = await cache_service.get_cache_stats()
-    cache_hit_rate = cache_stats.get('hit_rate', 0.0)
+    cache_stats = cache_service.get_cache_stats()
+    cache_hit_rate = 0.0  # Simplified cache doesn't track hit rate
     
     # Check dependency status
     dependencies = DependencyStatus(
@@ -104,7 +104,7 @@ async def get_service_statistics(cache_service: CacheService = Depends(get_cache
     tiktok_count = total_extractions
     
     # Get cache stats
-    cache_stats = await cache_service.get_cache_stats()
+    cache_stats = cache_service.get_cache_stats()
     
     stats_data = {
         "service_stats": {

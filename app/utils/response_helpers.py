@@ -5,11 +5,11 @@ from typing import Any, Optional
 from fastapi import status
 from fastapi.responses import JSONResponse
 
-from ..models.responses import (
+from app.models.responses import (
     SuccessResponse, ErrorResponse, ResponseMetadata, 
     RateLimit, ErrorInfo, ErrorDetails
 )
-from ..core.exceptions import VideoScraperBaseException
+from app.core.exceptions import VideoScraperBaseException
 
 class ResponseHelper:
     """Utilities for creating standardized API responses."""

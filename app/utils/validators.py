@@ -2,8 +2,8 @@
 import re
 from urllib.parse import urlparse
 from typing import Tuple
-from ..core.config import PlatformConfig
-from ..core.exceptions import UnsupportedPlatformError, ValidationError
+from app.core.config import PlatformConfig
+from app.core.exceptions import UnsupportedPlatformError, ValidationError
 
 class URLValidator:
     """URL validation utilities for supported platforms."""

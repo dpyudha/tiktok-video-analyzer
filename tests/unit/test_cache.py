@@ -1,133 +1,105 @@
 """Unit tests for cache service."""
 import pytest
-from unittest.mock import Mock, patch
-from app.services.cache_service import InMemoryCacheBackend, CacheService
-from app.models.video import VideoMetadata, ThumbnailAnalysis
+from datetime import datetime, timedelta
+from app.services.cache_service import CacheService
 
-@pytest.mark.asyncio
-class TestInMemoryCacheBackend:
-    """Test in-memory cache backend."""
+class TestCacheService:
+    """Test simple cache service."""
     
-    async def test_cache_set_and_get(self):
+    def test_cache_set_and_get(self):
         """Test setting and getting cache values."""
-        cache = InMemoryCacheBackend()
+        cache = CacheService()
         
+        test_url = "https://www.tiktok.com/@test/video/123"
         test_data = {"key": "value", "number": 42}
-        await cache.set("test_key", test_data, 60)
         
-        result = await cache.get("test_key")
+        cache.set(test_url, test_data, 1)  # 1 hour TTL
+        
+        result = cache.get(test_url)
         assert result == test_data
     
-    async def test_cache_miss(self):
+    def test_cache_miss(self):
         """Test cache miss."""
-        cache = InMemoryCacheBackend()
-        result = await cache.get("nonexistent_key")
+        cache = CacheService()
+        result = cache.get("https://nonexistent.com/video/123")
         assert result is None
     
-    async def test_cache_expiry(self):
+    def test_cache_expiry(self):
         """Test cache expiry functionality."""
-        cache = InMemoryCacheBackend()
+        cache = CacheService()
         
-        # Set with very short TTL (simulate expiry by directly modifying)
-        await cache.set("test_key", {"data": "test"}, 1)
+        test_url = "https://www.tiktok.com/@test/video/123"
+        test_data = {"data": "test"}
+        
+        # Set with 1 hour TTL
+        cache.set(test_url, test_data, 1)
         
         # Manually expire by setting past time
-        from datetime import datetime, timedelta
-        expired_time = (datetime.now() - timedelta(seconds=1)).isoformat()
-        cache._cache["test_key"]["expires_at"] = expired_time
+        key = cache._make_key(test_url)
+        cache._cache[key]["expires_at"] = datetime.now() - timedelta(hours=1)
         
-        result = await cache.get("test_key")
+        result = cache.get(test_url)
         assert result is None
     
-    async def test_cache_stats(self):
+    def test_cache_exists(self):
+        """Test cache exists functionality."""
+        cache = CacheService()
+        
+        test_url = "https://www.tiktok.com/@test/video/123"
+        test_data = {"data": "test"}
+        
+        # Should not exist initially
+        assert not cache.exists(test_url)
+        
+        # Set data
+        cache.set(test_url, test_data, 1)
+        
+        # Should exist now
+        assert cache.exists(test_url)
+    
+    def test_cache_clear(self):
+        """Test cache clear functionality."""
+        cache = CacheService()
+        
+        test_url = "https://www.tiktok.com/@test/video/123"
+        test_data = {"data": "test"}
+        
+        # Set data
+        cache.set(test_url, test_data, 1)
+        assert cache.get(test_url) is not None
+        
+        # Clear cache
+        cache.clear()
+        assert cache.get(test_url) is None
+    
+    def test_cache_stats(self):
         """Test cache statistics."""
-        cache = InMemoryCacheBackend()
+        cache = CacheService()
         
         # Initial stats
-        stats = await cache.get_stats()
-        assert stats["hit_rate"] == 0
-        assert stats["total_entries"] == 0
+        stats = cache.get_stats()
+        assert stats["total_items"] == 0
+        assert "cache_size_mb" in stats
         
         # Add some data
-        await cache.set("key1", {"data": "value1"}, 60)
-        await cache.set("key2", {"data": "value2"}, 60)
+        cache.set("https://test1.com/video/1", {"data": "value1"}, 1)
+        cache.set("https://test2.com/video/2", {"data": "value2"}, 1)
         
-        # Test hit
-        await cache.get("key1")
-        # Test miss
-        await cache.get("nonexistent")
-        
-        stats = await cache.get_stats()
-        assert stats["total_entries"] == 2
-        assert stats["hit_rate"] == 0.5  # 1 hit out of 2 requests
-
-@pytest.mark.asyncio 
-class TestCacheService:
-    """Test cache service."""
+        stats = cache.get_stats()
+        assert stats["total_items"] == 2
     
-    @patch('app.services.cache_service.settings')
-    async def test_cache_disabled(self, mock_settings):
-        """Test behavior when cache is disabled."""
-        mock_settings.cache_enabled = False
-        
-        cache_service = CacheService()
-        
-        # Should return None when cache is disabled
-        result = await cache_service.get_video_metadata("http://test.com", True)
-        assert result is None
-    
-    @patch('app.services.cache_service.settings')
-    async def test_cache_video_metadata(self, mock_settings):
-        """Test caching video metadata."""
-        mock_settings.cache_enabled = True
-        mock_settings.cache_ttl_seconds = 3600
-        mock_settings.redis_url = None
-        
-        cache_service = CacheService()
-        
-        # Create test metadata
-        thumbnail_analysis = ThumbnailAnalysis(
-            visual_style="talking_head",
-            confidence_score=0.9
-        )
-        
-        metadata = VideoMetadata(
-            url="https://www.tiktok.com/@test/video/123",
-            platform="tiktok",
-            title="Test Video",
-            duration=30,
-            thumbnail_analysis=thumbnail_analysis
-        )
-        
-        # Cache the metadata
-        await cache_service.set_video_metadata(metadata, 3600)
-        
-        # Retrieve from cache
-        cached_result = await cache_service.get_video_metadata(
-            "https://www.tiktok.com/@test/video/123", True
-        )
-        
-        assert cached_result is not None
-        assert cached_result.url == metadata.url
-        assert cached_result.title == metadata.title
-        assert cached_result.cache_hit is True
-    
-    @patch('app.services.cache_service.settings')
-    async def test_cache_key_generation(self, mock_settings):
-        """Test cache key generation for different parameters."""
-        mock_settings.cache_enabled = True
-        mock_settings.redis_url = None
-        
-        cache_service = CacheService()
+    def test_cache_key_generation(self):
+        """Test cache key generation consistency."""
+        cache = CacheService()
         
         url = "https://www.tiktok.com/@test/video/123"
         
-        key1 = cache_service._generate_cache_key(url, True)
-        key2 = cache_service._generate_cache_key(url, False)
+        key1 = cache._make_key(url)
+        key2 = cache._make_key(url)
         
-        # Different analysis options should generate different keys
-        assert key1 != key2
+        # Same URL should generate same key
+        assert key1 == key2
         
-        # Same parameters should generate same key
-        key3 = cache_service._generate_cache_key(url, True)
-        assert key1 == key3
+        # Different URLs should generate different keys
+        key3 = cache._make_key("https://www.tiktok.com/@test/video/456")
+        assert key1 != key3

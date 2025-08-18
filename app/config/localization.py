@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any
 from enum import Enum
 import re
 
-from ..utils.logging import CorrelatedLogger
+from app.utils.logging import CorrelatedLogger
 
 
 class SupportedLanguage(str, Enum):

@@ -159,30 +159,29 @@ class TestAPITranscriptIntegration:
         mock_metadata.platform = "tiktok"
         mock_extractor.extract_metadata.return_value = mock_metadata
         
-        # Mock the VideoExtractor class to return our mock
-        with patch('app.services.batch_processor.VideoExtractor', return_value=mock_extractor):
-            processor = BatchProcessor()
-            
-            request = ExtractBatchRequest(
-                urls=["https://tiktok.com/test"],
-                include_transcript=True,
-                parallel_processing=False
-            )
-            
-            with patch('app.utils.validators.URLValidator.validate_and_get_platform', 
-                      return_value=(True, 'tiktok')):
-                
-                result = await processor.process_batch(request, request_id="test-123")
-                
-                # Verify extract_metadata was called with transcript parameter
-                mock_extractor.extract_metadata.assert_called_once_with(
-                    "https://tiktok.com/test",
-                    request.include_thumbnail_analysis,
-                    request.include_transcript,  # Should pass transcript parameter
-                    "test-123"
-                )
-                
-                assert result.summary.total_requested == 1
+        # Mock the VideoService to use our mock extractor
+        mock_video_service = AsyncMock()
+        mock_video_service.get_video_metadata.return_value = mock_metadata
+        
+        processor = BatchProcessor(video_service=mock_video_service)
+        
+        request = ExtractBatchRequest(
+            urls=["https://tiktok.com/test"],
+            include_transcript=True,
+            parallel_processing=False
+        )
+        
+        result = await processor.process_batch(request, request_id="test-123")
+        
+        # Verify get_video_metadata was called with transcript parameter
+        mock_video_service.get_video_metadata.assert_called_once_with(
+            "https://tiktok.com/test",
+            request.include_thumbnail_analysis,
+            request.include_transcript,  # Should pass transcript parameter
+            "test-123"
+        )
+        
+        assert result.summary.total_requested == 1
     
     def test_video_metadata_response_serialization(self, sample_metadata_with_transcript):
         """Test VideoMetadata response serialization with transcript data."""

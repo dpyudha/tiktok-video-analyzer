@@ -8,7 +8,7 @@ from enum import Enum
 import yaml
 from pathlib import Path
 
-from ...utils.logging import CorrelatedLogger
+from app.utils.logging import CorrelatedLogger
 
 
 class AnalysisLanguage(str, Enum):
