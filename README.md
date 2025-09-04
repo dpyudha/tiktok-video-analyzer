@@ -62,7 +62,6 @@ curl -X POST "http://localhost:8000/extract" \
 Extracts subtitles from TikTok videos with timing and quality assessment.
 
 **Features:**
-- Multi-format support (VTT, SRT, JSON3, SRV, TTML)
 - Language prioritization (Indonesian → English)
 - Quality scoring and confidence assessment
 - Accurate timing for each segment
